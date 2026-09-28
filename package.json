@@ -1,0 +1,6 @@
+{
+  "name": "code-guard",
+  "dependencies": {
+    "eslint": "^10.0.0"
+  }
+}
