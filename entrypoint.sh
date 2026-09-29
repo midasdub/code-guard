@@ -25,7 +25,11 @@ fi
 
 # --- CHECK 1: Secret Scanning (TruffleHog) ---
 echo "--- Scanning for secrets (TruffleHog) ---"
-trufflehog filesystem . 
+# --fail: exit 183 when secrets are found (by default trufflehog exits 0 even with findings)
+# --no-verification: never send found credentials over the network; also keeps results
+#   identical offline, locally and in CI
+# --no-update: never self-update, so the scanned version is the one pinned in the image
+trufflehog filesystem . --fail --no-verification --no-update
 TRUFFLEHOG_STATUS=$?
 
 if [ $TRUFFLEHOG_STATUS -ne 0 ]; then
@@ -35,7 +39,10 @@ fi
 # --- CHECK 2: Code Linting (ESLint) ---
 echo "--- Code Linting (ESLint) ---"
 # Run ESLint installed inside the container at /app
-/app/node_modules/.bin/eslint "**/*.js" --config /app/eslint.config.js
+# "." + the "files" patterns in the config cover .js, .cjs and .mjs.
+# --no-inline-config: ignore "/* eslint-disable */" comments, otherwise the agent
+#   could switch the rules off from inside its own code
+/app/node_modules/.bin/eslint . --config /app/eslint.config.js --no-inline-config
 ESLINT_STATUS=$?
 
 if [ $ESLINT_STATUS -ne 0 ]; then

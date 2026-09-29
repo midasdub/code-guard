@@ -1,6 +1,10 @@
 {
   "name": "code-guard",
+  "version": "0.1.0",
+  "private": true,
   "dependencies": {
-    "eslint": "^10.0.0"
+    "@eslint/js": "10.0.1",
+    "eslint": "10.11.0",
+    "globals": "17.12.0"
   }
 }
