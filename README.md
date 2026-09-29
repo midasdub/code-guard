@@ -22,6 +22,9 @@ The image is based on `node:22.23.3-alpine3.24` (pinned) to keep it small and re
 ├── entrypoint.sh      # Scan script run when the container starts
 ├── eslint.config.js   # ESLint flat config applied to scanned code
 ├── package.json       # Node dependencies (ESLint), exact versions
+├── tests/smoke.sh     # Runs the built image on generated projects, checks verdicts
+├── .github/workflows/build.yml  # Build, test, publish to ghcr.io
+├── JOURNAL.md         # Decision log (French)
 └── package-lock.json  # Locked dependency tree used by `npm ci`
 ```
 
@@ -31,18 +34,42 @@ The image is based on `node:22.23.3-alpine3.24` (pinned) to keep it small and re
 
 ## Usage
 
-### Build the image
+### Use the published image
+
+Images are published to the GitHub Container Registry by the `build` pipeline:
+
+| Tag | Published when |
+| --- | --- |
+| `ghcr.io/midasdub/code-guard:X.Y.Z` | a tag `vX.Y.Z` is pushed (stable version, use this in target repositories) |
+| `ghcr.io/midasdub/code-guard:main` | a commit lands on `main` (latest development build) |
+| `ghcr.io/midasdub/code-guard:sha-<commit>` | every published build |
+
+The version is printed on the first line of every report and stored in the image labels:
 
 ```sh
-docker build -t code-guard -f dockerfile .
+docker inspect ghcr.io/midasdub/code-guard:main --format '{{index .Config.Labels "org.opencontainers.image.version"}}'
 ```
+
+### Build the image locally
+
+```sh
+docker build -t code-guard:dev -f dockerfile .
+```
+
+### Test the image
+
+```sh
+tests/smoke.sh code-guard:dev
+```
+
+Runs the image on generated projects (clean, secret, `eval`, writable mount, …) and checks each verdict. The `build` pipeline runs the same script: if a test fails, the image is not published.
 
 ### Scan a project
 
 Mount the project you want to check at `/workspace`, **read-only** (`:ro`). If the mount is writable, code-guard refuses to run and blocks:
 
 ```sh
-docker run --rm -v "$(pwd)":/workspace:ro code-guard
+docker run --rm -v "$(pwd)":/workspace:ro code-guard:dev
 ```
 
 To scan a different directory, replace `$(pwd)` with its absolute path.

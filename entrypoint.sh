@@ -1,6 +1,8 @@
 #!/bin/sh
 
-echo "Starting Code-Guard: initializing analysis..."
+# CODE_GUARD_VERSION / CODE_GUARD_REVISION are baked into the image at build time,
+# so every report says which version of code-guard produced the verdict
+echo "Starting Code-Guard ${CODE_GUARD_VERSION} (commit ${CODE_GUARD_REVISION}): initializing analysis..."
 
 # Verify that the target code directory exists
 if [ ! -d "/workspace" ]; then
@@ -42,7 +44,9 @@ echo "--- Code Linting (ESLint) ---"
 # "." + the "files" patterns in the config cover .js, .cjs and .mjs.
 # --no-inline-config: ignore "/* eslint-disable */" comments, otherwise the agent
 #   could switch the rules off from inside its own code
-/app/node_modules/.bin/eslint . --config /app/eslint.config.js --no-inline-config
+# --no-error-on-unmatched-pattern: a project with no JavaScript file (e.g. a PR that
+#   only changes the README) is not an error; any other ESLint failure still blocks
+/app/node_modules/.bin/eslint . --config /app/eslint.config.js --no-inline-config --no-error-on-unmatched-pattern
 ESLINT_STATUS=$?
 
 if [ $ESLINT_STATUS -ne 0 ]; then

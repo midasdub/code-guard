@@ -94,3 +94,48 @@ Reste à vérifier : …
 - **Parce que :** échec sûr (« fail closed ») : un montage mal configuré bloque au lieu de passer en silence.
 - **Rejeté :** A car une erreur de configuration passerait inaperçue.
 - **Reste à vérifier :** la lecture seule ne protège pas contre le réseau ni contre la lecture des fichiers — voir ce qu'elle ne protège pas (défi 1).
+
+## 2026-09-29 · Projet sans fichier JavaScript
+
+- **Question :** que faire quand la PR ne contient aucun fichier JavaScript (ex. : seul le README change) ?
+- **Options considérées :** A (bloquer : ESLint échoue avec « all files ignored »), B (`--no-error-on-unmatched-pattern` : rien à analyser = pas d'erreur ESLint), C (tester soi-même la présence de fichiers avant ESLint)
+- **Choix :** B
+- **Parce que :** découvert en lançant l'image sur `t-project` (aucun `.js`) : la PR était bloquée sans raison. Toute autre erreur d'ESLint (code 2, plantage) bloque toujours.
+- **Rejeté :** A car faux positif sur toute PR sans code ; C car plus de code à maintenir pour le même résultat.
+- **Reste à vérifier :** ESLint ignore par défaut `node_modules/` — un agent pourrait y cacher du code (cas d'attaque à tester, défi 2).
+
+## 2026-09-29 · Versionnement de l'image
+
+- **Question :** comment le dépôt cible sait-il quelle version de code-guard a rendu le verdict ?
+- **Options considérées :** A (tag `latest` seulement), B (tags `X.Y.Z` sur tag git, `main` et `sha-<commit>` + version écrite dans l'image et affichée dans le rapport)
+- **Choix :** B
+- **Parce que :** critère du défi 1 ; la première ligne du rapport et les labels OCI (`docker inspect`) donnent la version et le commit.
+- **Rejeté :** A car `latest` change sans prévenir : deux PR identiques pourraient avoir deux verdicts différents.
+- **Reste à vérifier :** le dépôt cible doit utiliser une version fixe (`X.Y.Z` ou digest), pas `main` — à décider au défi 2.
+
+## 2026-09-29 · Registre et publication
+
+- **Question :** où publier l'image, et comment éviter de publier une image cassée ?
+- **Options considérées :** A (Docker Hub, compte + secret à gérer), B (GitHub Container Registry, jeton `GITHUB_TOKEN` intégré)
+- **Choix :** B, publication seulement si `tests/smoke.sh` passe
+- **Parce que :** même plateforme que les dépôts, pas de secret supplémentaire ; un test échoué arrête le job avant la publication.
+- **Rejeté :** A car un secret de plus à protéger, pour aucun avantage ici.
+- **Reste à vérifier :** l'image doit être publique (ou accessible à `t-project`) pour que le pipeline cible puisse la télécharger.
+
+## 2026-09-29 · Faux secrets dans les tests
+
+- **Question :** comment tester la détection de secrets sans mettre de secret dans le dépôt ?
+- **Options considérées :** A (fichier de test avec un faux jeton committé), B (jeton aléatoire généré au moment du test)
+- **Choix :** B
+- **Parce que :** un faux jeton committé serait lui-même détecté comme fuite (scanner de GitHub, et code-guard sur son propre dépôt).
+- **Rejeté :** A pour cette raison.
+- **Reste à vérifier :** —
+
+## 2026-09-29 · Actions tierces dans les workflows
+
+- **Question :** comment référencer une action GitHub (ex. `actions/checkout`) ?
+- **Options considérées :** A (tag : `@v7`), B (SHA de commit : `@3d3c42e…  # v7.0.1`), C (éviter les actions, écrire des commandes `docker`)
+- **Choix :** B pour `checkout`, C pour tout le reste (build, login, push avec la CLI `docker`)
+- **Parce que :** un tag peut être déplacé vers un autre code, un SHA non ; moins d'actions tierces = moins de code que je dois comprendre et auquel je dois faire confiance (règle 1).
+- **Rejeté :** A car une action compromise changerait le pipeline sans que je le voie.
+- **Reste à vérifier :** —

@@ -1,0 +1,75 @@
+# Builds the code-guard image, runs the smoke tests against it, and publishes it
+# to the GitHub Container Registry (ghcr.io) when the tests pass.
+#
+# - pull request  -> build + test only (nothing is published)
+# - push to main  -> build + test + publish :main and :sha-<commit>
+# - tag vX.Y.Z    -> build + test + publish :X.Y.Z and :sha-<commit>
+name: build
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: read
+  # needed only to push the image to ghcr.io with the built-in GITHUB_TOKEN
+  packages: write
+
+env:
+  IMAGE: ghcr.io/midasdub/code-guard
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # Pinned to a commit SHA: a tag like v7 can be moved to other code, a SHA cannot
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Compute version
+        id: version
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          if [ "$REF_TYPE" = "tag" ]; then
+            VERSION="${REF_NAME#v}"      # v1.2.3 -> 1.2.3
+          else
+            VERSION="0.0.0-$SHORT_SHA"   # development build
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "short_sha=$SHORT_SHA" >> "$GITHUB_OUTPUT"
+          echo "Version: $VERSION"
+
+      - name: Build image
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          docker build -f dockerfile \
+            --build-arg VERSION="$VERSION" \
+            --build-arg REVISION="$GITHUB_SHA" \
+            -t code-guard:dev .
+
+      # A failing test stops the job here: a broken image is never published
+      - name: Smoke tests
+        run: tests/smoke.sh code-guard:dev
+
+      - name: Publish to ghcr.io
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACTOR: ${{ github.actor }}
+          REF_TYPE: ${{ github.ref_type }}
+          VERSION: ${{ steps.version.outputs.version }}
+          SHORT_SHA: ${{ steps.version.outputs.short_sha }}
+        run: |
+          echo "$GH_TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
+          TAGS="sha-$SHORT_SHA"
+          if [ "$REF_TYPE" = "tag" ]; then TAGS="$TAGS $VERSION"; else TAGS="$TAGS main"; fi
+          for TAG in $TAGS; do
+            docker tag code-guard:dev "$IMAGE:$TAG"
+            docker push "$IMAGE:$TAG"
+          done
