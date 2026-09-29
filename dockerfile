@@ -37,6 +37,17 @@ COPY eslint.config.js entrypoint.sh ./
 # Make the script executable
 RUN chmod +x entrypoint.sh
 
+# Version of this image, passed by the build pipeline (--build-arg).
+# Visible in every report and in the image labels (docker inspect).
+ARG VERSION=dev
+ARG REVISION=unknown
+ENV CODE_GUARD_VERSION=$VERSION \
+    CODE_GUARD_REVISION=$REVISION
+LABEL org.opencontainers.image.title="code-guard" \
+      org.opencontainers.image.version=$VERSION \
+      org.opencontainers.image.revision=$REVISION \
+      org.opencontainers.image.source="https://github.com/midasdub/code-guard"
+
 # Set the entrypoint to execute the script upon container startup
 # The target project code is expected to be mounted at /workspace
 ENTRYPOINT ["/app/entrypoint.sh"]
