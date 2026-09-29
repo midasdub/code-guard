@@ -152,8 +152,8 @@ Reste à vérifier : …
 ## 2026-09-29 · Compte utilisé par l'agent
 
 - **Question :** sous quel compte GitHub l'agent pousse-t-il son code ?
-- **Options considérées :** A (compte séparé, rôle Write sur le dépôt cible), B (mon propre compte, administrateur)
-- **Choix :** B (pour l'instant)
-- **Parce que :** _(à compléter)_
-- **Rejeté :** A car _(à compléter)_
-- **Reste à vérifier :** limite importante — avec B, l'agent a les mêmes droits que l'administrateur. Il ne peut pas approuver sa propre PR, mais moi non plus : une revue obligatoire bloquerait toutes mes PR. Voir la discussion avant de fixer les protections.
+- **Options considérées :** A (compte séparé pour l'agent, rôle Write sur le dépôt cible), B (mon propre compte, administrateur)
+- **Choix :** A (premier choix : B, changé après analyse)
+- **Parce que :** GitHub interdit à l'auteur d'une PR de l'approuver. Avec B, soit la revue obligatoire bloque toutes les PR (personne ne peut approuver), soit il n'y a pas de revue et CODEOWNERS ne protège rien ; en plus l'agent aurait les droits d'administrateur et pourrait modifier les protections elles-mêmes. Le document parle d'un agent qui a le droit d'**écrire sur la branche A**, pas d'un administrateur.
+- **Rejeté :** B pour ces raisons.
+- **Reste à vérifier :** l'agent (rôle Write) ne peut ni modifier les protections de `main`, ni fusionner sans mon approbation, ni pousser sur `main` — à démontrer par des PR réelles.
