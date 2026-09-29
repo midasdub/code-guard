@@ -157,3 +157,12 @@ Reste à vérifier : …
 - **Parce que :** GitHub interdit à l'auteur d'une PR de l'approuver. Avec B, soit la revue obligatoire bloque toutes les PR (personne ne peut approuver), soit il n'y a pas de revue et CODEOWNERS ne protège rien ; en plus l'agent aurait les droits d'administrateur et pourrait modifier les protections elles-mêmes. Le document parle d'un agent qui a le droit d'**écrire sur la branche A**, pas d'un administrateur.
 - **Rejeté :** B pour ces raisons.
 - **Reste à vérifier :** l'agent (rôle Write) ne peut ni modifier les protections de `main`, ni fusionner sans mon approbation, ni pousser sur `main` — à démontrer par des PR réelles.
+
+## 2026-09-29 · Stratégie de fusion
+
+- **Question :** comment une branche arrive-t-elle dans `main` (préférence d'Anna : historique propre et linéaire) ?
+- **Options considérées :** A (squash : toute la PR devient un seul commit), B (rebase : les commits de la PR sont recopiés un par un), C (commit de fusion)
+- **Choix :** A, seule méthode autorisée dans les deux dépôts (réglage du dépôt), branches supprimées après fusion
+- **Parce que :** historique linéaire ; un commit = une PR, avec le numéro de la PR dans le titre : on retrouve facilement les PR d'attaque et les cas de test ; les commits intermédiaires d'un agent (essais, corrections) ne polluent pas `main`.
+- **Rejeté :** B car les commits intermédiaires de l'agent arrivent dans `main` et GitHub recrée les commits (nouveaux SHA) ; C car historique non linéaire.
+- **Reste à vérifier :** le détail des commits reste visible dans la PR, pas dans `main`.
