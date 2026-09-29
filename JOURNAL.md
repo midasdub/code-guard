@@ -139,3 +139,21 @@ Reste à vérifier : …
 - **Parce que :** un tag peut être déplacé vers un autre code, un SHA non ; moins d'actions tierces = moins de code que je dois comprendre et auquel je dois faire confiance (règle 1).
 - **Rejeté :** A car une action compromise changerait le pipeline sans que je le voie.
 - **Reste à vérifier :** —
+
+## 2026-09-29 · Quand et depuis quelle version la configuration du pipeline est lue
+
+- **Question :** l'agent peut-il désactiver le contrôle en modifiant le fichier de workflow dans sa branche A ?
+- **Options considérées :** A (`pull_request` : GitHub lit le workflow **dans la branche de la PR**), B (`pull_request_target` : GitHub lit le workflow **dans `main`**), C (règle d'organisation « workflow obligatoire » stocké dans `code-guard`), D (service externe / GitHub App)
+- **Choix :** B + CODEOWNERS sur `.github/`
+- **Parce que :** avec A, l'agent modifie ou supprime le fichier et le contrôle devient ce qu'il veut. Avec B, une modification du workflow dans la PR n'a aucun effet sur le contrôle de cette PR. CODEOWNERS ajoute une revue humaine obligatoire pour toute modification de `.github/`.
+- **Rejeté :** A car l'agent contrôlerait son propre contrôle ; C car les règles d'organisation demandent un plan payant (Team/Enterprise) ; D car il faut héberger un serveur — trop long pour le projet.
+- **Reste à vérifier :** le piège de `pull_request_target` : le job a les droits du dépôt de base. Règle absolue : le code de la PR est une **donnée** (monté en lecture seule, analysé statiquement), jamais installé ni exécuté. Protections en plus : jeton en lecture seule, `persist-credentials: false`, `--network none`.
+
+## 2026-09-29 · Compte utilisé par l'agent
+
+- **Question :** sous quel compte GitHub l'agent pousse-t-il son code ?
+- **Options considérées :** A (compte séparé, rôle Write sur le dépôt cible), B (mon propre compte, administrateur)
+- **Choix :** B (pour l'instant)
+- **Parce que :** _(à compléter)_
+- **Rejeté :** A car _(à compléter)_
+- **Reste à vérifier :** limite importante — avec B, l'agent a les mêmes droits que l'administrateur. Il ne peut pas approuver sa propre PR, mais moi non plus : une revue obligatoire bloquerait toutes mes PR. Voir la discussion avant de fixer les protections.
